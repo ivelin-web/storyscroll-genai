@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { AppState, StoryData } from './types';
-import { generateStory } from './services/gemini';
-import { InputView } from './components/InputView';
-import { GenerativeLoader } from './components/GenerativeLoader';
-import { StoryView } from './components/StoryView';
+"use client";
 
-const App: React.FC = () => {
+import React, { useState } from 'react';
+import { AppState, StoryData } from '@/types';
+import { InputView } from '@/components/InputView';
+import { GenerativeLoader } from '@/components/GenerativeLoader';
+import { StoryView } from '@/components/StoryView';
+
+export default function Home() {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -13,7 +14,20 @@ const App: React.FC = () => {
   const handleGenerate = async (topic: string) => {
     try {
       setAppState(AppState.GENERATING);
-      const data = await generateStory(topic);
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ topic }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
       setStoryData(data);
       setAppState(AppState.VIEWING);
     } catch (error) {
@@ -47,7 +61,7 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center justify-center h-screen p-6 text-center">
           <h2 className="text-3xl font-serif text-red-500 mb-4">Generation Failed</h2>
           <p className="text-gray-400 mb-8">{errorMsg}</p>
-          <button 
+          <button
             onClick={handleReset}
             className="px-6 py-3 bg-white text-black rounded-full font-bold hover:opacity-90 transition-opacity"
           >
@@ -57,6 +71,4 @@ const App: React.FC = () => {
       )}
     </div>
   );
-};
-
-export default App;
+}
